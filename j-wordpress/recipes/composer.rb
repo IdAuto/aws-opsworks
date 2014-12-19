@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: j-wordpress
-# Recipe:: php
+# Recipe:: composer
 #
 # Copyright 2014, YOUR_COMPANY_NAME
 #

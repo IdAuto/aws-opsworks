@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: j-wordpress
-# Recipe:: composer
+# Recipe:: capistrano
 #
 # Copyright 2014, YOUR_COMPANY_NAME
 #
@@ -9,4 +9,5 @@
 
 gem_package "capistrano" do
   action :install
+  options("--user-install)
 end
