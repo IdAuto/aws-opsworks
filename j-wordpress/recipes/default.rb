@@ -7,7 +7,7 @@
 # All rights reserved - Do Not Redistribute
 #
 package "httpd" do
-  action :action # see actions section below
+  action :install
 end
 
 service "httpd" do
