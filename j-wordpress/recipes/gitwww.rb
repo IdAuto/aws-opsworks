@@ -7,9 +7,9 @@
 # All rights reserved - Do Not Redistribute
 #
 git "/var/www/html" do
-  repository "git://github.com:IdAuto/wordpresswww.git"
+  repository "https://github.com/IdAuto/wordpresswww.git"
   revision "master"
-  action :sync
+  action :checkout
 end
 
 execute "bundle install" do
@@ -17,7 +17,6 @@ execute "bundle install" do
 	command "bundle install"
 	action :nothing
 end
-
 
 execute "composer install" do
 	cwd "/var/www/html"
