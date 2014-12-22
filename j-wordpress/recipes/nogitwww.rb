@@ -1,7 +1,6 @@
 #
 # Cookbook Name:: j-wordpress
-# Recipe:: default
-#
+# Recipe:: nogitwww
 # Copyright 2014, gitwww
 #
 # All rights reserved - Do Not Redistribute
