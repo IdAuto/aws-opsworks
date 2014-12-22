@@ -7,7 +7,17 @@
 # All rights reserved - Do Not Redistribute
 #
 
-###@@@  STATUS: Recipe believed to contain everything; however, Tomcat is not starting!
+###@@@  STATUS: Recipe believed to contain everything.  Current errors are expectec due to no database.
+
+###########################################################################
+# Variables                                                               #
+###########################################################################
+timezone = "America/Chicago"
+mysql_connector_major = "5.1"
+mysql_connector_minor = "33"
+tomcat_version = "7.0.56"
+root_version = "1.0.2"
+idautoapps_version = "3.1.5.3.10"
 
 ###########################################################################
 # Perform OS Updates                                                      #
@@ -45,9 +55,26 @@ package "openldap-clients" do
 	action :install
 end
 
+# Install LDAP client package
+package "net-snmp" do
+	action :install
+end
+
+# Install LDAP client package
+package "net-snmp-utils" do
+	action :install
+end
+
 ###########################################################################
 # Manage directories                                                      #
 ###########################################################################
+directory "/root/results" do
+	owner "root"
+	group "root"
+	mode "0755"
+	action :create
+end
+
 directory "/var/opt/idauto" do
 	owner "root"
 	group "root"
@@ -143,8 +170,6 @@ end
 ###########################################################################
 # Set timezone                                                            #
 ###########################################################################
-timezone = "America/Chicago"
-
 link "/etc/localtime" do
 	to "/usr/share/zoneinfo/#{timezone}"
 	not_if "readlink /etc/localtime | grep -q '#{timezone}$'"
@@ -189,17 +214,17 @@ end
 ###########################################################################
 # Modify SSH                                                              #
 ###########################################################################
-execute "sudoers-permitrootlogin" do
+execute "ssh-permitrootlogin" do
 	command "sudo sed -i 's|^PermitRootLogin forced-commands-only|\\#PermitRootLogin forced-commands-only|g' /etc/ssh/sshd_config"
-	creates "/root/results/sudoers-permitrootlogin.done"
-	not_if { ::File.exists?("/root/results/sudoers-permitrootlogin.done")}
+	creates "/root/results/ssh-permitrootlogin.done"
+	not_if { ::File.exists?("/root/results/ssh-permitrootlogin.done")}
 	action :run
 end
 
-execute "sudoers-maxauthtries" do
+execute "ssh-maxauthtries" do
 	command "sudo sed -i 's|^#MaxAuthTries 6|\\MaxAuthTries 30|g' /etc/ssh/sshd_config"
-	creates "/root/results/sudoers-maxauthtries.done"
-	not_if { ::File.exists?("/root/results/sudoers-maxauthtries.done")}
+	creates "/root/results/ssh-maxauthtries.done"
+	not_if { ::File.exists?("/root/results/ssh-maxauthtries.done")}
 	action :run
 end
 
@@ -244,9 +269,14 @@ execute "enable_java" do
 	action :run
 end
 
+execute "keytool_symlink" do
+	command "sudo ln -s /usr/java/latest/bin/keytool /usr/bin/keytool"
+	creates "/root/results/keytool_symlink.done"
+	not_if { ::File.exists?("/root/results/keytool_symlink.done")}
+	action :run
+end
+
 # Install MySQL Connector
-mysql_connector_major = "5.1"
-mysql_connector_minor = "33"
 remote_file "/root/mysql-connector-java-#{mysql_connector_major}.#{mysql_connector_minor}.tar.gz" do
   source "http://cdn.mysql.com/archives/mysql-connector-java-#{mysql_connector_major}/mysql-connector-java-#{mysql_connector_major}.#{mysql_connector_minor}.tar.gz"
   mode '0644'
@@ -262,10 +292,23 @@ bash "extract_connector" do
 end
 
 ###########################################################################
+# Configure SNMP Monitoring                                               #
+###########################################################################
+# Download SNMP configuration
+remote_file "/etc/snmp/snmpd.conf" do
+  source "http://s3.amazonaws.com/idauto-apps/snmpd.conf"
+  mode '0644'
+end
+
+# Restart SNMP service
+service "snmpd" do
+	supports :status => true, :restart => true, :reload => true
+	action [ :enable, :restart ]
+end
+
+###########################################################################
 # Install and Configure Tomcat                                            #
 ###########################################################################
-tomcat_version = "7.0.56"
-
 # Download Tomcat
 remote_file "/root/apache-tomcat-#{tomcat_version}.zip" do
   source "https://s3.amazonaws.com/idauto-apps/apache-tomcat-#{tomcat_version}.zip"
@@ -327,16 +370,16 @@ remote_file "/var/opt/idauto/common/jmxremote.password" do
   mode '0644'
 end
 
-# Update Tomcat directories
-directory "/srv/tomcat7/bin" do
-	mode "0755"
-	action :create
+# Make Tomcat binaries executable
+execute "tomcat-binaries-executable" do
+	command "sudo chmod +x -R /srv/tomcat7/bin"
+	action :run
 end
 
-# Tomcat service
-service "tomcat" do
-	supports :status => true, :restart => true, :reload => true
-	action [ :enable, :start ]
+# Modify ownership of tomcat directory
+execute "tomcat-user-ownership" do
+	command "sudo chown tomcat:tomcat -R /srv/tomcat7"
+	action :run
 end
 
 # Modify tomcat sleep settings
@@ -347,12 +390,16 @@ execute "modify-tomcat-sleep" do
 	action :run
 end
 
+# Tomcat service
+service "tomcat" do
+	supports :status => true, :restart => true, :reload => true
+	action [ :enable, :start ]
+end
+
 ###########################################################################
 # Configure Base Apps                                                     #
 ###########################################################################
 # Install ROOT
-root_version = "1.0.2"
-
 remote_file "/root/ROOT-#{root_version}.zip" do
   source "http://downloads.identitymgmt.net/bundles/ROOT-#{root_version}.zip"
   mode '0755'
@@ -367,8 +414,6 @@ execute "deploy-root-app" do
 end
 
 # Install Appliance Manager
-idautoapps_version = "3.1.5.3.10"
-
 remote_file "/root/idauto-apps-#{idautoapps_version}.zip" do
   source "http://downloads.identitymgmt.net/bundles-30/idauto-apps-#{idautoapps_version}.zip"
   mode '0755'
@@ -382,23 +427,10 @@ execute "deploy-idautoapps-app" do
 	action :run
 end
 
-###########################################################################
-# Update File Permissions                                                 #
-###########################################################################
 # Modify ownership of idauto directory
-directory "/var/opt/idauto" do
-	owner "tomcat"
-	group "tomcat"
-	recursive true
-	action :create
-end
-
-# Modify ownership of tomcat directory
-directory "/srv/tomcat7" do
-	owner "tomcat"
-	group "tomcat"
-	recursive true
-	action :create
+execute "idauto-user-ownership" do
+	command "sudo chown tomcat:tomcat -R /var/opt/idauto"
+	action :run
 end
 
 ###########################################################################
