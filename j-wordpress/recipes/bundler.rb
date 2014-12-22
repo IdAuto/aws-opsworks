@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: j-wordpress
-# Recipe:: default
+# Recipe:: bundler
 #
 # Copyright 2014, bundler
 #

@@ -13,19 +13,16 @@ end
 execute "tar" do
 	cwd "/var/www/html"
 	command "tar xvf wordpresswww-master.tar"
-	action :nothing
 end
 
 execute "bundle install" do
 	cwd "/var/www/html"
 	command "bundle install"
-	action :nothing
 end
 
 execute "composer install" do
 	cwd "/var/www/html"
 	command "composer install"
-	action :nothing
 end
 
 execute "npm install" do

@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: j-wordpress
-# Recipe:: default
+# Recipe:: gitwww
 #
 # Copyright 2014, gitwww
 #
@@ -15,13 +15,11 @@ end
 execute "bundle install" do
 	cwd "/var/www/html"
 	command "bundle install"
-	action :nothing
 end
 
 execute "composer install" do
 	cwd "/var/www/html"
 	command "composer install"
-	action :nothing
 end
 
 execute "npm install" do
