@@ -7,8 +7,7 @@
 # All rights reserved - Do Not Redistribute
 #
 
-bash "install_something" do
-  user "root"
+bash "composer" do
   cwd "/var/www/html"
   code <<-EOH
   curl -sS https://getcomposer.org/installer | php
