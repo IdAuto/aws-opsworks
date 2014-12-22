@@ -21,8 +21,9 @@ execute "bundle install" do
 end
 
 execute "composer install" do
+	user "root"
 	cwd "/var/www/html"
-	command "composer install"
+	command "./composer.phar install"
 end
 
 execute "npm install" do
