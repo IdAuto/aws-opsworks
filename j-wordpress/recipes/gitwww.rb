@@ -8,7 +8,7 @@
 #
 git "/var/www/html" do
   repository "git://github.com:IdAuto/wordpresswww.git"
-  revision "justin"
+  revision "master"
   action :sync
 end
 
