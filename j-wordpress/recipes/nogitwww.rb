@@ -14,6 +14,7 @@ execute "tar" do
 	cwd "/var/www/html"
 	command "tar xvf wordpresswww-master.tar"
 	action :nothing
+end
 
 execute "bundle install" do
 	cwd "/var/www/html"
